@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SmartCourse{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <div class="row mb-4 align-items-end">
+        <div class="col-md-8">
+            <h1 class="fw-bold">Learning Dashboard</h1>
+            <p class="text-muted">Track your AI-powered search history and curated collections.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <span class="badge bg-white text-primary border px-3 py-2 shadow-sm">
+                Total Searches: {{ history|length if history else 0 }}
+            </span>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-5">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="mb-0 fw-bold text-primary">⭐ Saved Recommendations</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark"> <tr>
+                        <th scope="col" style="width: 40%;">Course Title</th>
+                        <th scope="col">Original Query</th>
+                        <th scope="col">Model Used</th>
+                        <th scope="col" class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if saved %}
+                        {% for s in saved %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">{{ s.course_title }}</div>
+                                <small class="text-muted">ID: #{{ s.course_id }}</small>
+                            </td>
+                            <td><span class="text-muted small">"{{ s.query }}"</span></td>
+                            <td>
+                                {% if s.model == 'neural' %}
+                                    <span class="badge rounded-pill bg-info text-dark">Neural</span>
+                                {% else %}
+                                    <span class="badge rounded-pill bg-secondary">TF-IDF</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('remove_saved', item_id=s.id) }}" class="btn btn-sm btn-outline-danger px-3">Remove</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No courses saved yet.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">🔍 Search History</h5>
+            {% if history %}
+            <a href="{{ url_for('clear_history') }}" class="btn btn-sm btn-danger px-3" onclick="return confirm('Are you sure you want to clear all history?')">Clear History</a>
+            {% endif %}
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark"> <tr>
+                        <th scope="col">Timestamp</th>
+                        <th scope="col" style="width: 35%;">Query</th>
+                        <th scope="col">Methodology</th>
+                        <th scope="col">Result Preview</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if history %}
+                        {% for item in history %}
+                        <tr>
+                            <td class="small text-muted">{{ item.timestamp }}</td>
+                            <td class="fw-medium">"{{ item.query }}"</td>
+                            <td>
+                                {% if item.model == 'neural' %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3">Neural</span>
+                                {% else %}
+                                    <span class="badge bg-dark-subtle text-dark border border-dark-subtle px-3">TF-IDF</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="text-truncate text-muted small" style="max-width: 250px;">
+                                    {{ item.results }}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">History is empty.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

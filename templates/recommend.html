@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}SmartCourse - Find Recommendations{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-body p-4 p-md-5">
+                <h2 class="fw-bold mb-4">What's your next learning goal?</h2>
+                <form method="POST">
+                    <div class="mb-4">
+                        <textarea class="form-control form-control-lg shadow-none" 
+                                  id="query" name="query" rows="3" 
+                                  placeholder="e.g., I want to build a website using Python and Django..." 
+                                  required>{{ query if query else '' }}</textarea>
+                    </div>
+                    
+                    <div class="row align-items-center">
+                        <div class="col-md-8 mb-3 mb-md-0">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Select AI Engine</label>
+                            <div class="d-flex gap-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="model" id="tfidf" value="tfidf" {% if model_type != 'neural' %}checked{% endif %}>
+                                    <label class="form-check-label" for="tfidf">
+                                        <strong>TF-IDF</strong> <small class="d-block text-muted">Keyword matching</small>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="model" id="neural" value="neural" {% if model_type == 'neural' %}checked{% endif %}>
+                                    <label class="form-check-label" for="neural">
+                                        <strong>Neural</strong> <small class="d-block text-muted">Semantic intent</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <button type="submit" class="btn btn-primary btn-lg px-5 shadow">Analyze & Match</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger shadow-sm border-0">{{ error }}</div>
+        {% endif %}
+
+        {% if results %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold">Top 10 Recommendations</h4>
+            <span class="badge bg-light text-dark border p-2">Engine: {{ model_type | upper }}</span>
+        </div>
+
+        <div class="row g-4">
+            {% for course in results %}
+            <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-sm course-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="badge bg-primary-subtle text-primary">{{ course.department }}</span>
+                            <span class="text-muted small fw-bold">{{ course.level }}</span>
+                        </div>
+                        <h5 class="card-title fw-bold">{{ course.title }}</h5>
+                        <p class="card-text text-muted small">{{ course.description }}</p>
+                        
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold">Relevance Score</span>
+                                <span class="small fw-bold text-primary">{{ course.score }}%</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" 
+                                     style="width: {{ course.score }}%;" 
+                                     aria-valuenow="{{ course.score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary w-100 save-btn" 
+                                    data-id="{{ course.course_id }}" 
+                                    data-title="{{ course.title | e }}" 
+                                    data-query="{{ query | e }}"
+                                    data-model="{{ model_type }}">
+                                <span class="me-1">💾</span> Save Recommendation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.save-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const data = {
+            course_id: this.dataset.id,
+            title: this.dataset.title,
+            query: this.dataset.query,
+            model: this.dataset.model
+        };
+        
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+        
+        fetch('/api/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        }).then(r => r.json()).then(res => {
+            if (res.status === 'saved') {
+                this.className = 'btn btn-sm btn-success w-100 disabled';
+                this.innerHTML = '✓ Saved to Dashboard';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

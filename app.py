@@ -5,64 +5,75 @@ import sqlite3
 import os
 import json
 from datetime import datetime
-
-# ML imports
-from sklearn.feature_extraction.text import TfidfVectorizer
+import joblib
+from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import SentenceTransformer
+import re
+import string
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+# Download required NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
 
 app = Flask(__name__)
-app.secret_key = 'smart-course-secure-key-2026' # Keep this secret for session encryption
+app.secret_key = 'smart-course-secure-key-2026'
 
 # --- 1. DATA PREPARATION ---
-# We load the dataset at startup so the app is fast during user requests
 DATA_PATH = 'Courses_dataset.csv'
 
 def load_and_clean_data():
-    try:
-        data = pd.read_csv(DATA_PATH)
-        # Drop duplicates to keep recommendations unique
-        data = data.drop_duplicates(subset=['course_title'])
-        # Fill empty slots so the code doesn't crash on null values
-        data['course_title'] = data['course_title'].fillna('Untitled Course')
-        data['subject'] = data['subject'].fillna('General')
-        # We combine title and subject to give the models more context for matching
-        data['description_clean'] = data['course_title'].str.lower() + " " + data['subject'].str.lower()
-        return data
-    except Exception as e:
-        print(f"Developer Note: Check if {DATA_PATH} exists! Error: {e}")
-        # Return an empty dataframe structure so the app doesn't break entirely
-        return pd.DataFrame(columns=['course_title', 'subject', 'description_clean', 'level'])
+    df = pd.read_csv(DATA_PATH)
+    df = df.drop_duplicates(subset=['course_title'])
+    df['course_title'] = df['course_title'].fillna('Untitled Course')
+    df['subject'] = df['subject'].fillna('General')
+    df['level'] = df['level'].fillna('All Levels')
+    df = df.reset_index(drop=True)
+    df['text_content'] = df['course_title'].astype(str) + " " + df['subject'].astype(str) + " " + df['level'].astype(str)
+    return df
 
 df = load_and_clean_data()
 
-# --- 2. MODEL INITIALIZATION ---
-# TF-IDF: Great for exact keyword matching (e.g., "Python", "React")
-tfidf = TfidfVectorizer(stop_words='english', ngram_range=(1, 2), max_features=10000)
-tfidf_matrix = tfidf.fit_transform(df['description_clean'])
+# --- 2. TEXT PREPROCESSING (NLTK) ---
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
 
-# Neural Model: Great for understanding intent (e.g., "coding" matches "programming")
-# Using 'all-MiniLM-L6-v2' as it's the perfect balance of speed and accuracy
-semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
-embeddings = semantic_model.encode(df['description_clean'].tolist(), convert_to_tensor=True)
+def clean_text(text):
+    text = re.sub(r"<.*?>", "", text)
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    text = text.lower()
+    tokens = nltk.word_tokenize(text)
+    tokens = [lemmatizer.lemmatize(tok) for tok in tokens if tok.isalpha() and tok not in stop_words]
+    return " ".join(tokens)
 
-# --- 3. DATABASE LOGIC ---
+df['processed_text'] = df['text_content'].apply(clean_text)
+
+# --- 3. LOAD MODELS AND EMBEDDINGS ---
+tfidf_vectorizer = joblib.load("tfidf_vectorizer.pkl")
+tfidf_matrix_train = sparse.load_npz("tfidf_matrix.npz")  # Fixed load
+train_df = joblib.load("train_dataframe.pkl")
+embedding_model = SentenceTransformer("sentence_transformer_model")
+train_embeddings = np.load("neural_embeddings.npy")
+
+# --- 4. DATABASE LOGIC ---
 DB_PATH = 'smartcourse.db'
 
 def get_db():
-    """Connects to the SQLite database and allows accessing columns by name."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    """Create tables if they don't exist yet."""
     with get_db() as conn:
-        # Table for the search history log
         conn.execute('''CREATE TABLE IF NOT EXISTS searches
                      (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, 
                       query TEXT, model TEXT, timestamp TEXT, results TEXT)''')
-        # Table for the specific courses users want to keep
         conn.execute('''CREATE TABLE IF NOT EXISTS saved
                      (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, 
                       query TEXT, course_id INTEGER, course_title TEXT, 
@@ -72,12 +83,49 @@ init_db()
 
 @app.before_request
 def ensure_session():
-    """Ensures every visitor has a unique session ID for their history."""
     if 'session_id' not in session:
         session['session_id'] = os.urandom(16).hex()
 
-# --- 4. WEB ROUTES ---
+# --- 5. RECOMMENDATION FUNCTIONS ---
+def recommend_tfidf(query, top_k=10):
+    query_vec = tfidf_vectorizer.transform([clean_text(query)])
+    sim_scores = cosine_similarity(query_vec, tfidf_matrix_train).flatten()
+    top_indices = sim_scores.argsort()[-top_k:][::-1]
+    results = []
+    for idx in top_indices:
+        row = train_df.iloc[idx]
+        score = round(float(sim_scores[idx]) * 100, 1)
+        if score < 1: score = 5.0
+        results.append({
+            'course_id': int(idx),
+            'title': row['course_title'],
+            'department': row['subject'],
+            'description': (row['course_title'] + " " + row['subject'])[:150] + "...",
+            'level': row.get('level', 'All Levels'),
+            'score': score
+        })
+    return results
 
+def recommend_neural(query, top_k=10):
+    query_emb = embedding_model.encode([clean_text(query)])
+    sim_scores = cosine_similarity(query_emb, train_embeddings).flatten()
+    top_indices = sim_scores.argsort()[-top_k:][::-1]
+    results = []
+    for idx in top_indices:
+        row = train_df.iloc[idx]
+        score = round(float(sim_scores[idx]) * 100, 1)
+        if score < 1: score = 5.0
+        results.append({
+            'course_id': int(idx),
+            'title': row['course_title'],
+            'department': row['subject'],
+            'description': (row['course_title'] + " " + row['subject'])[:150] + "...",
+            'level': row.get('level', 'All Levels'),
+            'score': score
+        })
+    return results
+
+# --- 6. WEB ROUTES ---
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -91,40 +139,19 @@ def recommend():
         if not query:
             return render_template('recommend.html', error="Your learning goal cannot be empty.")
 
-        # Logic for Keyword vs. Semantic matching
         if model_type == 'tfidf':
-            query_vec = tfidf.transform([query.lower()])
-            sim_scores = cosine_similarity(query_vec, tfidf_matrix).flatten()
+            results = recommend_tfidf(query)
         else:
-            query_emb = semantic_model.encode(query.lower(), convert_to_tensor=True)
-            sim_scores = util.cos_sim(query_emb, embeddings)[0].cpu().numpy()
+            results = recommend_neural(query)
 
-        # Sort and pick the top 10 most relevant courses
-        top_indices = sim_scores.argsort()[-10:][::-1]
-        results = []
-        
-        for idx in top_indices:
-            score = round(float(sim_scores[idx]) * 100, 1)
-            # Minimal score floor just for UI visual appeal
-            if score < 1: score = 5.0 
-            
-            row = df.iloc[idx]
-            results.append({
-                'course_id': int(idx),
-                'title': row['course_title'],
-                'department': row['subject'],
-                'description': (row['course_title'] + " " + row['subject'])[:150] + "...",
-                'level': row.get('level', 'All Levels'),
-                'score': score
-            })
-
-        # Save this search to the database history
+        # Save search history
         try:
             with get_db() as conn:
-                conn.execute('INSERT INTO searches (session_id, query, model, timestamp, results) VALUES (?,?,?,?,?)',
-                             (session['session_id'], query, model_type, 
-                              datetime.now().strftime("%Y-%m-%d %H:%M"), 
-                              json.dumps(results[:3]))) # Store top 3 as a preview string
+                conn.execute(
+                    'INSERT INTO searches (session_id, query, model, timestamp, results) VALUES (?,?,?,?,?)',
+                    (session['session_id'], query, model_type, datetime.now().strftime("%Y-%m-%d %H:%M"), 
+                     json.dumps(results[:3]))
+                )
                 conn.commit()
         except Exception as e:
             print(f"History Log Error: {e}")
@@ -135,7 +162,6 @@ def recommend():
 
 @app.route('/dashboard')
 def dashboard():
-    """Fetches user history and saved items for the dashboard view."""
     with get_db() as conn:
         history = conn.execute('SELECT * FROM searches WHERE session_id = ? ORDER BY id DESC', 
                                (session['session_id'],)).fetchall()
@@ -145,7 +171,6 @@ def dashboard():
 
 @app.route('/clear_history')
 def clear_history():
-    """Wipes all search logs for the current user."""
     with get_db() as conn:
         conn.execute('DELETE FROM searches WHERE session_id = ?', (session['session_id'],))
         conn.commit()
@@ -153,7 +178,6 @@ def clear_history():
 
 @app.route('/remove_saved/<int:item_id>')
 def remove_saved(item_id):
-    """Deletes a specific saved course."""
     with get_db() as conn:
         conn.execute('DELETE FROM saved WHERE id = ? AND session_id = ?', (item_id, session['session_id']))
         conn.commit()
@@ -161,20 +185,19 @@ def remove_saved(item_id):
 
 @app.route('/about')
 def about():
-    # Pass 'df' so we can show the total count of courses in the dataset
     return render_template('about.html', df=df)
 
-# --- 5. API ENDPOINTS ---
-
+# --- 7. API ENDPOINTS ---
 @app.route('/api/save', methods=['POST'])
 def api_save():
-    """Endpoint called by the 'Save' button via JavaScript."""
     data = request.json
     try:
         with get_db() as conn:
-            conn.execute('INSERT INTO saved (session_id, query, course_id, course_title, model, saved_at) VALUES (?,?,?,?,?,?)',
-                         (session['session_id'], data['query'], data['course_id'], 
-                          data['title'], data['model'], datetime.now().isoformat()))
+            conn.execute(
+                'INSERT INTO saved (session_id, query, course_id, course_title, model, saved_at) VALUES (?,?,?,?,?,?)',
+                (session['session_id'], data['query'], data['course_id'], 
+                 data['title'], data['model'], datetime.now().isoformat())
+            )
             conn.commit()
         return jsonify({'status': 'saved'})
     except Exception as e:

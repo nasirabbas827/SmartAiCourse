@@ -2,90 +2,168 @@
 {% block title %}SmartCourse - AI Recommender{% endblock %}
 
 {% block content %}
-<section class="hero-section text-center py-5 mb-5">
+<style>
+    /* Hero Section Styling */
+    .hero-gradient-text {
+        background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+    }
+
+    .feature-card {
+        border: 1px solid rgba(226, 232, 240, 0.6);
+        background: white;
+        border-radius: 24px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+        border-color: #818cf8;
+    }
+
+    .icon-box {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pulse-button {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+        70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+
+    .check-icon {
+        background: #eef2ff;
+        color: #4f46e5;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        margin-right: 12px;
+    }
+</style>
+
+<section class="text-center py-5 mt-4 mb-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <span class="badge rounded-pill bg-primary mb-3 px-3 py-2">ML & NLP Powered</span>
-            <h1 class="display-3 fw-bold mb-3">SmartCourse</h1>
-            <p class="lead text-muted mb-4">
-                An intelligent recommendation engine leveraging <strong>TF-IDF</strong> and <strong>Neural Sentence-Transformers</strong> 
-                to bridge the gap between your goals and 8,500+ learning opportunities.
+        <div class="col-lg-9">
+            <span class="badge rounded-pill bg-indigo-soft mb-3 px-3 py-2 text-primary" style="background: rgba(99, 102, 241, 0.1);">
+                <i class="fas fa-sparkles me-2"></i>Next-Gen Course Discovery
+            </span>
+            <h1 class="display-3 fw-extrabold mb-3">
+                Master Any Skill with <span class="hero-gradient-text">SmartCourse</span>
+            </h1>
+            <p class="lead text-muted mb-5 px-lg-5">
+                Our dual-engine AI analyzes over <strong>8,500+ courses</strong> to find exactly what you need. 
+                Whether it's specific keywords or conceptual intent, we bridge the gap to your future.
             </p>
-            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
-                <a href="/recommend" class="btn btn-primary btn-lg px-5 shadow-sm">Start Learning</a>
-                <a href="/about" class="btn btn-outline-secondary btn-lg px-5">How it Works</a>
+            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                <a href="/recommend" class="btn btn-primary btn-lg px-5 py-3 rounded-pill pulse-button shadow-lg border-0" style="background: var(--brand-gradient);">
+                    Start Finding Courses <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                <a href="/about" class="btn btn-outline-dark btn-lg px-5 py-3 rounded-pill">
+                    View Methodology
+                </a>
             </div>
         </div>
     </div>
 </section>
 
-<div class="row g-4 mb-5">
+<div class="row g-4 mb-5 pb-5">
     <div class="col-md-6">
-        <div class="card h-100 p-4 border-0 shadow-sm">
-            <div class="card-body text-center">
-                <div class="feature-icon mb-3">
-                    <span class="fs-1">🔍</span>
-                </div>
-                <h3 class="fw-bold">TF-IDF Engine</h3>
-                <p class="text-muted">Keyword-focused matching using N-Grams and Cosine Similarity. Perfect for when you know exactly what tools or languages you want to master.</p>
-                <div class="mt-auto"><span class="badge bg-light text-dark">Precision @ K</span></div>
+        <div class="feature-card p-5 h-100">
+            <div class="icon-box bg-light text-dark">
+                <i class="fas fa-search"></i>
+            </div>
+            <h3 class="fw-bold mb-3">TF-IDF Engine</h3>
+            <p class="text-muted mb-4">
+                Classical NLP excellence. Uses N-Grams and keyword matching to find courses that precisely mention the tools, libraries, or frameworks you type.
+            </p>
+            <div class="mt-auto">
+                <span class="badge bg-light text-muted border px-3 py-2">Exact Match Precision</span>
             </div>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card h-100 p-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);">
-            <div class="card-body text-center">
-                <div class="feature-icon mb-3">
-                    <span class="fs-1">🧠</span>
-                </div>
-                <h3 class="fw-bold">Neural Model</h3>
-                <p class="text-muted">Semantic understanding via Sentence-Transformers. Captures intent and conceptual relationships even if keywords don't match exactly.</p>
-                <div class="mt-auto"><span class="badge bg-primary text-white">all-MiniLM-L6-v2</span></div>
+        <div class="feature-card p-5 h-100 border-primary border-opacity-25" style="background: linear-gradient(to bottom right, #ffffff, #f5f3ff);">
+            <div class="icon-box bg-primary text-white" style="background: var(--brand-gradient) !important;">
+                <i class="fas fa-brain"></i>
+            </div>
+            <h3 class="fw-bold mb-3">Neural Embeddings</h3>
+            <p class="text-muted mb-4">
+                Powered by <code>all-MiniLM-L6-v2</code>. This model understands "Deep Learning" even if you only search for "Neural Networks" by mapping conceptual relationships.
+            </p>
+            <div class="mt-auto">
+                <span class="badge bg-primary px-3 py-2">Semantic Understanding</span>
             </div>
         </div>
     </div>
 </div>
 
-<section class="py-5">
-    <div class="row align-items-center">
-        <div class="col-md-5">
-            <h2 class="fw-bold mb-4">System Capabilities</h2>
-            <ul class="list-unstyled">
-                <li class="mb-3 d-flex align-items-start">
-                    <span class="text-primary me-3">✔</span>
-                    <div><strong>Massive Dataset:</strong> Real-time processing of 8,500+ professional courses.</div>
-                </li>
-                <li class="mb-3 d-flex align-items-start">
-                    <span class="text-primary me-3">✔</span>
-                    <div><strong>NLP Pipeline:</strong> Advanced lemmatization and stopword removal via spaCy.</div>
-                </li>
-                <li class="mb-3 d-flex align-items-start">
-                    <span class="text-primary me-3">✔</span>
-                    <div><strong>Side-by-Side Comparison:</strong> Compare keyword-based vs. semantic results instantly.</div>
-                </li>
-                <li class="mb-3 d-flex align-items-start">
-                    <span class="text-primary me-3">✔</span>
-                    <div><strong>Smart Dashboard:</strong> Track your search history and save your top-rated recommendations.</div>
-                </li>
-            </ul>
+<section class="py-5 mb-5 bg-white rounded-5 shadow-sm overflow-hidden">
+    <div class="row align-items-center g-0">
+        <div class="col-md-6 p-5">
+            <h2 class="fw-bold mb-4 display-6">Intelligence in every query.</h2>
+            <div class="mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="check-icon"><i class="fas fa-check"></i></span>
+                    <span class="fw-semibold">Real-time Processing:</span>&nbsp;<span class="text-muted">8,500+ items filtered instantly.</span>
+                </div>
+                <div class="d-flex align-items-center mb-3">
+                    <span class="check-icon"><i class="fas fa-check"></i></span>
+                    <span class="fw-semibold">Advanced spaCy Pipeline:</span>&nbsp;<span class="text-muted">Lemmatization & stopword cleaning.</span>
+                </div>
+                <div class="d-flex align-items-center mb-3">
+                    <span class="check-icon"><i class="fas fa-check"></i></span>
+                    <span class="fw-semibold">Model Comparison:</span>&nbsp;<span class="text-muted">Analyze logic vs semantic results.</span>
+                </div>
+                <div class="d-flex align-items-center mb-3">
+                    <span class="check-icon"><i class="fas fa-check"></i></span>
+                    <span class="fw-semibold">Smart Tracking:</span>&nbsp;<span class="text-muted">Save history & favorites to your dashboard.</span>
+                </div>
+            </div>
+            <a href="/dashboard" class="btn btn-link text-primary p-0 fw-bold text-decoration-none">Explore Dashboard Features <i class="fas fa-chevron-right ms-1 small"></i></a>
         </div>
-        <div class="col-md-7 text-center">
-            <div class="p-5 bg-white rounded-4 shadow-sm border">
-                <h5 class="text-uppercase text-muted small fw-bold mb-3">Sample Query</h5>
-                <p class="fst-italic text-primary fs-5">"I want to learn how to build data visualizations with Python."</p>
-                <hr>
-                <div class="d-flex justify-content-between small">
-                    <span><strong>TF-IDF:</strong> Looks for "Python", "Visualization"</span>
-                    <span><strong>Neural:</strong> Understands "Matplotlib", "Plotly", "Analysis"</span>
+        <div class="col-md-6 bg-light p-5 d-flex align-items-center justify-content-center">
+            <div class="w-100 p-4 rounded-4 bg-white shadow-lg" style="max-width: 400px; transform: rotate(2deg);">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary rounded-circle p-2 me-2"><i class="fas fa-robot text-white small"></i></div>
+                    <span class="small fw-bold text-uppercase text-muted letter-spacing-1">AI Inference Output</span>
+                </div>
+                <p class="mb-3 small text-muted">Query: "I want to learn to build websites."</p>
+                <div class="p-2 mb-2 rounded bg-light border-start border-primary border-4 small">
+                    <strong>TF-IDF:</strong> HTML, CSS, Web Development
+                </div>
+                <div class="p-2 rounded bg-light border-start border-purple border-4 small" style="border-left-color: #a855f7 !important;">
+                    <strong>Neural:</strong> React, UX Design, Deployment
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<div class="bg-dark text-white rounded-4 p-5 text-center mt-5">
-    <h2 class="mb-3">Ready to find your next course?</h2>
-    <p class="mb-4 opacity-75">Join thousands of students using SmartCourse to optimize their learning path.</p>
-    <a href="/recommend" class="btn btn-secondary btn-lg">Get My Recommendations</a>
+<div class="bg-dark text-white rounded-5 p-5 text-center position-relative overflow-hidden" style="background: linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)), url('https://www.transparenttextures.com/patterns/carbon-fibre.png');">
+    <div class="py-4 position-relative z-index-1">
+        <h2 class="display-5 fw-bold mb-3">Ready to find your next course?</h2>
+        <p class="mb-5 text-white-50 fs-5">Join SmartCourse today and optimize your path to professional mastery.</p>
+        <a href="/recommend" class="btn btn-light btn-lg px-5 py-3 rounded-pill fw-bold shadow">Get Started Now</a>
+    </div>
 </div>
+
 {% endblock %}

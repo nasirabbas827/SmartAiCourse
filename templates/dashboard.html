@@ -2,107 +2,194 @@
 {% block title %}Dashboard - SmartCourse{% endblock %}
 
 {% block content %}
-<div class="container pb-5">
-    <div class="row mb-4 align-items-end">
-        <div class="col-md-8">
-            <h1 class="fw-bold">Learning Dashboard</h1>
-            <p class="text-muted">Track your AI-powered search history and curated collections.</p>
-        </div>
-        <div class="col-md-4 text-md-end">
-            <span class="badge bg-white text-primary border px-3 py-2 shadow-sm">
-                Total Searches: {{ history|length if history else 0 }}
-            </span>
-        </div>
-    </div>
+<style>
+    .dashboard-header {
+        margin-bottom: 2.5rem;
+    }
+    
+    .section-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+        margin-bottom: 3rem;
+    }
 
-    <div class="card shadow-sm border-0 mb-5">
-        <div class="card-header bg-white py-3 border-bottom">
-            <h5 class="mb-0 fw-bold text-primary">⭐ Saved Recommendations</h5>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-dark"> <tr>
-                        <th scope="col" style="width: 40%;">Course Title</th>
-                        <th scope="col">Original Query</th>
-                        <th scope="col">Model Used</th>
-                        <th scope="col" class="text-end">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if saved %}
-                        {% for s in saved %}
-                        <tr>
-                            <td>
-                                <div class="fw-bold text-dark">{{ s.course_title }}</div>
-                                <small class="text-muted">ID: #{{ s.course_id }}</small>
-                            </td>
-                            <td><span class="text-muted small">"{{ s.query }}"</span></td>
-                            <td>
-                                {% if s.model == 'neural' %}
-                                    <span class="badge rounded-pill bg-info text-dark">Neural</span>
-                                {% else %}
-                                    <span class="badge rounded-pill bg-secondary">TF-IDF</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <a href="{{ url_for('remove_saved', item_id=s.id) }}" class="btn btn-sm btn-outline-danger px-3">Remove</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">No courses saved yet.</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+    .card-title-area {
+        padding: 1.5rem 2rem;
+        background: #fcfcfd;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold">🔍 Search History</h5>
-            {% if history %}
-            <a href="{{ url_for('clear_history') }}" class="btn btn-sm btn-danger px-3" onclick="return confirm('Are you sure you want to clear all history?')">Clear History</a>
-            {% endif %}
+    .table thead th {
+        background: #f8fafc;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: #64748b;
+        padding: 1.2rem 2rem;
+        border: none;
+    }
+
+    .table tbody td {
+        padding: 1.2rem 2rem;
+        vertical-align: middle;
+        border-color: #f1f5f9;
+        color: #334155;
+    }
+
+    .model-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 6px;
+        text-transform: uppercase;
+    }
+
+    .badge-tfidf { background: #eef2ff; color: #4f46e5; }
+    .badge-neural { background: #f5f3ff; color: #9333ea; }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+    .query-text {
+        font-weight: 500;
+        max-width: 250px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .timestamp {
+        font-size: 0.85rem;
+        color: #94a3b8;
+    }
+</style>
+
+<div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+        <div class="bg-primary bg-opacity-10 p-3 rounded-4">
+            <i class="fas fa-chart-pie text-primary fs-4"></i>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-dark"> <tr>
-                        <th scope="col">Timestamp</th>
-                        <th scope="col" style="width: 35%;">Query</th>
-                        <th scope="col">Methodology</th>
-                        <th scope="col">Result Preview</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if history %}
-                        {% for item in history %}
-                        <tr>
-                            <td class="small text-muted">{{ item.timestamp }}</td>
-                            <td class="fw-medium">"{{ item.query }}"</td>
-                            <td>
-                                {% if item.model == 'neural' %}
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3">Neural</span>
-                                {% else %}
-                                    <span class="badge bg-dark-subtle text-dark border border-dark-subtle px-3">TF-IDF</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="text-truncate text-muted small" style="max-width: 250px;">
-                                    {{ item.results }}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">History is empty.</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+        <div>
+            <h1 class="fw-bold h2 mb-1">Learning Dashboard</h1>
+            <p class="text-muted mb-0">Manage your saved courses and search comparisons.</p>
         </div>
     </div>
 </div>
+
+<div class="section-card">
+    <div class="card-title-area">
+        <h5 class="fw-bold mb-0"><i class="far fa-bookmark me-2 text-primary"></i> Saved Courses</h5>
+        <span class="badge rounded-pill bg-light text-dark border">{{ saved|length }} Total</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Course Title</th>
+                    <th>Source Query</th>
+                    <th>Model Used</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in saved %}
+                <tr>
+                    <td>
+                        <div class="fw-bold text-dark">{{ s.course_title }}</div>
+                        <div class="small text-muted">{{ s.department if s.department else 'General' }}</div>
+                    </td>
+                    <td><div class="query-text text-muted small">"{{ s.query }}"</div></td>
+                    <td>
+                        <span class="model-badge {% if s.model|lower == 'tfidf' %}badge-tfidf{% else %}badge-neural{% endif %}">
+                            {{ s.model }}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('remove_saved', item_id=s.id) }}" class="btn btn-outline-danger btn-action" title="Remove">
+                            <i class="fas fa-trash-alt small"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center py-5 text-muted">
+                        <i class="fas fa-folder-open d-block mb-2 fs-2 opacity-25"></i>
+                        No saved courses yet. <a href="/recommend" class="text-primary text-decoration-none">Explore now</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section-card">
+    <div class="card-title-area">
+        <h5 class="fw-bold mb-0"><i class="fas fa-history me-2 text-primary"></i> Comparison History</h5>
+        <a href="/clear_history" class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-bold">
+            <i class="fas fa-broom me-1"></i> Clear History
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Your Search Query</th>
+                    <th>Model Comparison (Top Result)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in history %}
+                <tr>
+                    <td class="timestamp">
+                        <i class="far fa-clock me-1"></i> {{ item.timestamp }}
+                    </td>
+                    <td><span class="fw-semibold">"{{ item.query }}"</span></td>
+                    <td>
+                        {% if item.parsed_results %}
+                            <div class="d-flex flex-column gap-2">
+                                <div class="small">
+                                    <span class="model-badge badge-tfidf me-2">TF-IDF</span>
+                                    <span class="text-dark">{{ item.parsed_results.tfidf[0].title if item.parsed_results.tfidf else 'No match' }}</span>
+                                </div>
+                                <div class="small">
+                                    <span class="model-badge badge-neural me-2">Neural</span>
+                                    <span class="text-dark">{{ item.parsed_results.neural[0].title if item.parsed_results.neural else 'No match' }}</span>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="text-muted italic small">Results not recorded</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center py-5 text-muted">
+                        No history found. Start searching to see side-by-side results!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 {% endblock %}

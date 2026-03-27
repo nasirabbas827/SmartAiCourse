@@ -1,119 +1,219 @@
 {% extends "base.html" %}
-{% block title %}SmartCourse - Find Recommendations{% endblock %}
+{% block title %}Find Recommendations - SmartCourse{% endblock %}
 
 {% block content %}
+<style>
+    .search-area {
+        background: white;
+        border-radius: 24px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: var(--card-shadow);
+    }
+
+    .model-header {
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.85rem;
+    }
+
+    .tfidf-header { background: #eef2ff; color: #4361ee; border: 1px solid #dee2ff; }
+    .neural-header { background: #f5f3ff; color: #7209b7; border: 1px solid #e0dbff; }
+
+    .result-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .result-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.05);
+        border-color: #cbd5e1;
+    }
+
+    .progress {
+        height: 6px;
+        background-color: #f1f5f9;
+        border-radius: 10px;
+    }
+
+    .progress-bar-tfidf { background: linear-gradient(90deg, #4361ee, #4cc9f0); }
+    .progress-bar-neural { background: linear-gradient(90deg, #7209b7, #b5179e); }
+
+    .score-text { font-weight: 700; font-size: 0.9rem; }
+    
+    #query {
+        border-radius: 15px;
+        padding: 1.5rem;
+        border: 2px solid #f1f5f9;
+        transition: border-color 0.3s;
+    }
+
+    #query:focus {
+        border-color: var(--brand-primary);
+        box-shadow: none;
+    }
+
+    .btn-analyze {
+        background: var(--brand-gradient);
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 700;
+        transition: transform 0.2s;
+    }
+
+    .btn-analyze:hover {
+        transform: scale(1.02);
+        box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+    }
+</style>
+
 <div class="row justify-content-center">
-    <div class="col-lg-10">
-        <div class="card shadow-sm border-0 mb-5">
-            <div class="card-body p-4 p-md-5">
-                <h2 class="fw-bold mb-4">What's your next learning goal?</h2>
-                <form method="POST">
-                    <div class="mb-4">
-                        <textarea class="form-control form-control-lg shadow-none" 
-                                  id="query" name="query" rows="3" 
-                                  placeholder="e.g., I want to build a website using Python and Django..." 
-                                  required>{{ query if query else '' }}</textarea>
-                    </div>
-                    
-                    <div class="row align-items-center">
-                        <div class="col-md-8 mb-3 mb-md-0">
-                            <label class="form-label fw-bold text-muted small text-uppercase">Select AI Engine</label>
-                            <div class="d-flex gap-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="model" id="tfidf" value="tfidf" {% if model_type != 'neural' %}checked{% endif %}>
-                                    <label class="form-check-label" for="tfidf">
-                                        <strong>TF-IDF</strong> <small class="d-block text-muted">Keyword matching</small>
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="model" id="neural" value="neural" {% if model_type == 'neural' %}checked{% endif %}>
-                                    <label class="form-check-label" for="neural">
-                                        <strong>Neural</strong> <small class="d-block text-muted">Semantic intent</small>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 text-md-end">
-                            <button type="submit" class="btn btn-primary btn-lg px-5 shadow">Analyze & Match</button>
-                        </div>
-                    </div>
-                </form>
+    <div class="col-lg-11">
+        
+        <div class="search-area p-4 p-md-5 mb-5">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">What's your next learning goal?</h2>
+                <p class="text-muted">Enter your preferences below to see how our dual AI engines process your intent.</p>
+            </div>
+
+            <div class="mb-4">
+                <textarea id="query" class="form-control form-control-lg" rows="3" 
+                          placeholder="e.g., I want to learn Python for data science and visualization"></textarea>
+            </div>
+
+            <div class="text-center">
+                <button id="analyzeBtn" class="btn btn-primary btn-lg btn-analyze px-5">
+                    <i class="fas fa-bolt me-2"></i> Analyze & Compare Results
+                </button>
             </div>
         </div>
 
-        {% if error %}
-            <div class="alert alert-danger shadow-sm border-0">{{ error }}</div>
-        {% endif %}
-
-        {% if results %}
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold">Top 10 Recommendations</h4>
-            <span class="badge bg-light text-dark border p-2">Engine: {{ model_type | upper }}</span>
-        </div>
-
-        <div class="row g-4">
-            {% for course in results %}
-            <div class="col-md-6">
-                <div class="card h-100 border-0 shadow-sm course-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="badge bg-primary-subtle text-primary">{{ course.department }}</span>
-                            <span class="text-muted small fw-bold">{{ course.level }}</span>
-                        </div>
-                        <h5 class="card-title fw-bold">{{ course.title }}</h5>
-                        <p class="card-text text-muted small">{{ course.description }}</p>
-                        
-                        <div class="mt-4 pt-3 border-top">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small fw-bold">Relevance Score</span>
-                                <span class="small fw-bold text-primary">{{ course.score }}%</span>
-                            </div>
-                            <div class="progress mb-3" style="height: 8px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                     role="progressbar" 
-                                     style="width: {{ course.score }}%;" 
-                                     aria-valuenow="{{ course.score }}" aria-valuemin="0" aria-valuemax="100"></div>
-                            </div>
-                            <button class="btn btn-sm btn-outline-primary w-100 save-btn" 
-                                    data-id="{{ course.course_id }}" 
-                                    data-title="{{ course.title | e }}" 
-                                    data-query="{{ query | e }}"
-                                    data-model="{{ model_type }}">
-                                <span class="me-1">💾</span> Save Recommendation
-                            </button>
-                        </div>
+        <div id="resultsSection" style="display:none;">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="model-header tfidf-header text-center">
+                        <i class="fas fa-font me-2"></i> TF-IDF: Keyword Matching
                     </div>
+                    <div id="tfidfResults"></div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="model-header neural-header text-center">
+                        <i class="fas fa-brain me-2"></i> Neural: Semantic Understanding
+                    </div>
+                    <div id="neuralResults"></div>
                 </div>
             </div>
-            {% endfor %}
         </div>
-        {% endif %}
+
     </div>
 </div>
 
 <script>
-document.querySelectorAll('.save-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const data = {
-            course_id: this.dataset.id,
-            title: this.dataset.title,
-            query: this.dataset.query,
-            model: this.dataset.model
-        };
+document.getElementById('analyzeBtn').addEventListener('click', function () {
+    const query = document.getElementById('query').value.trim();
+
+    if (!query) {
+        alert("Please describe what you want to learn!");
+        return;
+    }
+
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing Models...';
+
+    fetch('/api/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('resultsSection').style.display = 'block';
         
-        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+        renderResults('tfidfResults', data.tfidf, 'tfidf', query, 'progress-bar-tfidf');
+        renderResults('neuralResults', data.neural, 'neural', query, 'progress-bar-neural');
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-bolt me-2"></i> Analyze & Compare Results';
         
-        fetch('/api/save', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        }).then(r => r.json()).then(res => {
-            if (res.status === 'saved') {
-                this.className = 'btn btn-sm btn-success w-100 disabled';
-                this.innerHTML = '✓ Saved to Dashboard';
-            }
-        });
+        // Smooth scroll to results
+        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    })
+    .catch(err => {
+        alert("Error fetching recommendations.");
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-bolt me-2"></i> Analyze & Compare Results';
     });
 });
+
+function renderResults(containerId, results, model, query, barClass) {
+    let html = '';
+
+    if (!results || results.length === 0) {
+        html = '<div class="text-center p-5 text-muted">No specific matches found.</div>';
+    } else {
+        results.forEach(course => {
+            html += `
+            <div class="card result-card mb-4 p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="fw-bold text-dark mb-0 pe-3">${course.title}</h5>
+                    <span class="score-text ${model === 'tfidf' ? 'text-primary' : 'text-purple'}" style="color: ${model === 'neural' ? '#7209b7' : ''}">${course.score}%</span>
+                </div>
+                
+                <p class="text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                    ${course.description}
+                </p>
+
+                <div class="progress mb-4">
+                    <div class="progress-bar ${barClass}" role="progressbar" style="width: ${course.score}%"></div>
+                </div>
+
+                <button class="btn btn-sm btn-light border w-100 fw-bold rounded-pill" 
+                    onclick="saveCourse(${course.course_id}, '${course.title.replace(/'/g, "\\'")}', '${query.replace(/'/g, "\\'")}', '${model}', this)">
+                    <i class="far fa-bookmark me-1"></i> Save Recommendation
+                </button>
+            </div>`;
+        });
+    }
+
+    document.getElementById(containerId).innerHTML = html;
+}
+
+function saveCourse(id, title, query, model, btn) {
+    btn.disabled = true;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    fetch('/api/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            course_id: id,
+            title: title,
+            query: query,
+            model: model
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.innerHTML = '<i class="fas fa-check me-1"></i> Saved to Dashboard';
+        btn.classList.remove('btn-light', 'border');
+        btn.classList.add('btn-success', 'text-white');
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    });
+}
 </script>
 {% endblock %}

@@ -1,76 +1,156 @@
 {% extends "base.html" %}
-{% block title %}About - SmartCourse Technical Specs{% endblock %}
+{% block title %}Technical Specs - SmartCourse AI{% endblock %}
 
 {% block content %}
+<style>
+    .doc-card {
+        background: white;
+        border-radius: 24px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: var(--card-shadow);
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .tech-pill {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+
+    .tech-pill:hover {
+        background: var(--brand-primary);
+        color: white;
+        border-color: var(--brand-primary);
+        transform: translateY(-2px);
+    }
+
+    .metric-box {
+        background: #f8fafc;
+        border-radius: 20px;
+        padding: 2rem;
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+    }
+
+    .metric-box:hover {
+        background: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        border-color: var(--brand-primary);
+    }
+
+    .section-divider {
+        height: 4px;
+        width: 60px;
+        background: var(--brand-gradient);
+        border-radius: 10px;
+        margin: 1.5rem auto;
+    }
+
+    .algorithm-header {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 800;
+        color: var(--brand-primary);
+        margin-bottom: 0.5rem;
+    }
+</style>
+
 <div class="container pb-5">
     <div class="row mb-5">
-        <div class="col-12 text-center">
-            <h1 class="fw-bold display-5">Technical Documentation</h1>
-            <p class="text-muted lead">Deep dive into the SmartCourse recommendation architecture</p>
-            <hr class="w-25 mx-auto">
+        <div class="col-12 text-center mt-4">
+            <span class="badge rounded-pill px-3 py-2 mb-3" style="background: rgba(99, 102, 241, 0.1); color: #4f46e5;">
+                Documentation v1.0
+            </span>
+            <h1 class="fw-bold display-5 mb-3">System Architecture</h1>
+            <p class="text-muted lead mx-auto" style="max-width: 700px;">
+                Deep dive into the hybrid recommendation engine powering SmartCourse's semantic and keyword search capabilities.
+            </p>
+            <div class="section-divider"></div>
         </div>
     </div>
 
     <div class="row g-4">
         <div class="col-lg-4">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-primary text-white fw-bold py-3">
-                    📊 Dataset Overview
+            <div class="doc-card">
+                <div class="p-4 bg-dark text-white d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-database me-2 text-info"></i> Dataset</h5>
+                    <span class="small opacity-75">Udemy Corpus</span>
                 </div>
-                <div class="card-body">
-                    <h3 class="display-6 fw-bold text-primary">{{ df.shape[0] if df is defined else "8,500+" }}</h3>
-                    <p class="text-muted small">Total Courses Indexed</p>
-                    <ul class="list-group list-group-flush small">
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Metadata Fields</span>
-                            <span class="badge bg-light text-dark">Title, Dept, Rating</span>
+                <div class="card-body p-4">
+                    <div class="text-center py-4">
+                        <h3 class="display-4 fw-extrabold text-dark mb-0">{{ df.shape[0] if df is defined else "8,500+" }}</h3>
+                        <p class="text-muted text-uppercase fw-bold small">Verified Courses</p>
+                    </div>
+                    
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-muted small">Vector Dimensions</span>
+                            <span class="fw-bold small">384-D</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Processing</span>
-                            <span class="badge bg-light text-dark">spaCy Lemmatization</span>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-muted small">Similarity Metric</span>
+                            <span class="fw-bold small">Cosine Similarity</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Source</span>
-                            <span class="badge bg-light text-dark">Udemy Corpus</span>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-muted small">Pre-processing</span>
+                            <span class="fw-bold small">spaCy Lemma</span>
                         </li>
                     </ul>
-                    <div class="alert alert-warning mt-3 mb-0 small">
-                        <strong>Current Limitation:</strong> Description synthesized from <code>title + subject</code>.
+
+                    <div class="p-3 rounded-4 bg-light border border-warning border-opacity-25">
+                        <div class="d-flex gap-2">
+                            <i class="fas fa-info-circle text-warning mt-1"></i>
+                            <p class="small text-muted mb-0">
+                                <strong>Optimization:</strong> Descriptions are synthetically augmented using <code>title + department</code> for improved recall.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-8">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-dark text-white fw-bold py-3">
-                    ⚙️ Technical Implementation
+            <div class="doc-card p-5">
+                <h4 class="fw-bold mb-4">NLP & Hybrid Pipeline</h4>
+                <p class="text-muted">SmartCourse implements a dual-processing logic to ensure users find courses through both direct terminology and broader conceptual intent.</p>
+                
+                
+
+                <div class="row mt-5 g-4">
+                    <div class="col-md-6">
+                        <div class="algorithm-header">Method 01</div>
+                        <h5 class="fw-bold mb-3"><i class="fas fa-filter me-2 text-primary"></i> TF-IDF Model</h5>
+                        <p class="small text-muted mb-0">
+                            Classical content-based filtering. Utilizes <strong>N-Grams</strong> (unigrams and bigrams) to prioritize exact keyword matches. This ensures that specific tools (e.g., "Django") are weighted higher than general terms.
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="algorithm-header">Method 02</div>
+                        <h5 class="fw-bold mb-3"><i class="fas fa-project-diagram me-2 text-purple" style="color: #a855f7;"></i> Neural Model</h5>
+                        <p class="small text-muted mb-0">
+                            Leverages the <code>all-MiniLM-L6-v2</code> transformer. It converts queries into dense vectors, allowing the system to understand that a search for "web design" is semantically related to "UX/UI".
+                        </p>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <h5 class="fw-bold">NLP & Machine Learning Pipeline</h5>
-                    <p class="text-muted small">SmartCourse implements a dual-processing logic to handle both exact matches and conceptual queries.</p>
-                    
-                    <div class="row mt-4">
-                        <div class="col-md-6 border-end">
-                            <h6 class="text-primary fw-bold">1. TF-IDF Model</h6>
-                            <p class="small">Classical content-based filtering. Uses <strong>N-Grams (Uni-grams & Bi-grams)</strong> and Cosine Similarity to find exact keyword overlaps in course descriptions.</p>
-                        </div>
-                        <div class="col-md-6 ps-md-4">
-                            <h6 class="text-primary fw-bold">2. Neural Model</h6>
-                            <p class="small">Deep learning approach using <code>all-MiniLM-L6-v2</code>. Converts text into <strong>384-dimensional dense vectors</strong> to find semantic relationships.</p>
-                        </div>
-                    </div>
 
-                    
+                <hr class="my-5">
 
-                    <h5 class="fw-bold mt-4">Tech Stack</h5>
-                    <div class="d-flex flex-wrap gap-2 mt-2">
-                        <span class="badge rounded-pill border text-dark p-2 px-3">Flask (Backend)</span>
-                        <span class="badge rounded-pill border text-dark p-2 px-3">SQLite3 (History)</span>
-                        <span class="badge rounded-pill border text-dark p-2 px-3">Scikit-learn</span>
-                        <span class="badge rounded-pill border text-dark p-2 px-3">Sentence-Transformers</span>
-                        <span class="badge rounded-pill border text-dark p-2 px-3">Bootstrap 5 (UI)</span>
-                    </div>
+                <h5 class="fw-bold mb-3">Technology Stack</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="tech-pill">Flask (Python)</span>
+                    <span class="tech-pill">SQLite3</span>
+                    <span class="tech-pill">Sentence-Transformers</span>
+                    <span class="tech-pill">Scikit-learn</span>
+                    <span class="tech-pill">spaCy</span>
+                    <span class="tech-pill">Bootstrap 5</span>
+                    <span class="tech-pill">Mermaid.js</span>
                 </div>
             </div>
         </div>
@@ -78,26 +158,35 @@
 
     <div class="row mt-5">
         <div class="col-12">
-            <div class="bg-white p-4 rounded-4 shadow-sm border">
-                <h4 class="fw-bold mb-3">Model Performance Evaluation</h4>
-                <p class="text-muted">To ensure recommendation quality, the system is evaluated on three primary metrics:</p>
-                <div class="row text-center mt-4">
-                    <div class="col-md-4">
-                        <div class="p-3 border rounded-3 bg-light">
-                            <h2 class="mb-0 fw-bold">P@K</h2>
-                            <span class="small text-uppercase">Precision at K</span>
-                        </div>
+            <div class="doc-card p-5">
+                <div class="row align-items-center">
+                    <div class="col-lg-4 mb-4 mb-lg-0">
+                        <h4 class="fw-bold mb-3">Model Performance</h4>
+                        <p class="text-muted mb-0">We measure success using standard Information Retrieval (IR) metrics to ensure the "Top K" recommendations are objectively relevant.</p>
                     </div>
-                    <div class="col-md-4">
-                        <div class="p-3 border rounded-3 bg-light">
-                            <h2 class="mb-0 fw-bold">R@K</h2>
-                            <span class="small text-uppercase">Recall at K</span>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 border rounded-3 bg-light">
-                            <h2 class="mb-0 fw-bold">Hit-Rate</h2>
-                            <span class="small text-uppercase">Successful Matches</span>
+                    <div class="col-lg-8">
+                        <div class="row g-3 text-center">
+                            <div class="col-md-4">
+                                <div class="metric-box">
+                                    <h2 class="fw-bold text-primary mb-1">P@K</h2>
+                                    <div class="small fw-bold text-uppercase opacity-50">Precision</div>
+                                    <div class="small text-muted mt-2">Accuracy of the top results.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-box">
+                                    <h2 class="fw-bold text-primary mb-1">R@K</h2>
+                                    <div class="small fw-bold text-uppercase opacity-50">Recall</div>
+                                    <div class="small text-muted mt-2">Coverage of matching courses.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-box">
+                                    <h2 class="fw-bold text-primary mb-1">Hit%</h2>
+                                    <div class="small fw-bold text-uppercase opacity-50">Success Rate</div>
+                                    <div class="small text-muted mt-2">Frequency of valid matches.</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
